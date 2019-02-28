@@ -17,12 +17,14 @@ const bool EEPROM_CLEAR = false;
 // ---------- Global variables ---------- //
 float temp;
 byte receiver_thro_input, receiver_aile_input, receiver_elev_input, receiver_rudd_input, receiver_thro_trim, receiver_aile_trim, receiver_elev_trim, receiver_rudd_trim, receiver_thro_deadband, receiver_aile_deadband, receiver_elev_deadband, receiver_rudd_deadband;
-int receiver_thro, receiver_aile, receiver_elev, receiver_rudd, receiver_thro_prev, receiver_aile_prev, receiver_elev_prev, receiver_rudd_prev;
+int receiver_thro, receiver_aile, receiver_elev, receiver_rudd, receiver_thro_prev = 1500, receiver_aile_prev = 1500, receiver_elev_prev = 1500, receiver_rudd_prev = 1500;
 float receiver_thro_course, receiver_aile_course, receiver_elev_course, receiver_rudd_course;
 bool receiver_thro_inversion, receiver_aile_inversion, receiver_elev_inversion, receiver_rudd_inversion;
 byte joystick_throttle, joystick_rudder;
 int joystick_xaxis_rotation, joystick_yaxis_rotation;
+bool joystick = true;
 byte serial_thro1, serial_aile1, serial_elev1, serial_rudd1, serial_thro2, serial_aile2, serial_elev2, serial_rudd2;
+int serial_mode = 0;
 
 // ---------- Functions ---------- //
 // EEPROM
@@ -74,10 +76,11 @@ void eepromRead() {
   receiver_aile_inversion = EEPROM.read(14);
   receiver_elev_inversion = EEPROM.read(15);
   receiver_rudd_inversion = EEPROM.read(16);
-  receiver_thro_course = EEPROM.read(17);
-  receiver_aile_course = EEPROM.read(21);
-  receiver_elev_course = EEPROM.read(25);
-  receiver_rudd_course = EEPROM.read(29);
+  float f = 0.000f;
+  receiver_thro_course = EEPROM.get(17, f);
+  receiver_aile_course = EEPROM.get(21, f);
+  receiver_elev_course = EEPROM.get(25, f);
+  receiver_rudd_course = EEPROM.get(29, f);
 }
 
 // Receiver
@@ -140,10 +143,58 @@ void receiverUpdate() {
   }
 }
 void receiverTuning() {
-  receiver_thro = receiver_thro * receiver_thro_course + receiver_thro_trim;
-  receiver_aile = receiver_aile * receiver_aile_course + receiver_aile_trim;
-  receiver_elev = receiver_elev * receiver_elev_course + receiver_elev_trim;
-  receiver_rudd = receiver_rudd * receiver_rudd_course + receiver_rudd_trim;
+  if (receiver_thro < 1500) {
+    if (receiver_thro_course >= 1) temp = (receiver_thro - 1500) * -1 * (1-(receiver_thro_course-1));
+    else temp = (receiver_thro - 1500) * -1 * (1-receiver_thro_course+1);
+    temp = (temp - 500) * -1 + 1000;
+    receiver_thro = (int) temp;
+  } else if (receiver_thro > 1500) {
+     receiver_thro_course;
+    if (receiver_thro_course >= 1) temp = (receiver_thro - 1500) * (1-(receiver_thro_course-1));
+    else temp = (receiver_thro - 1500) * (1-receiver_thro_course+1);
+    temp = temp + 1500;
+    receiver_thro = (int) temp;
+  }
+  if (receiver_aile < 1500) {
+    if (receiver_aile_course >= 1) temp = (receiver_aile - 1500) * -1 * (1-(receiver_aile_course-1));
+    else temp = (receiver_aile - 1500) * -1 * (1-receiver_aile_course+1);
+    temp = (temp - 500) * -1 + 1000;
+    receiver_aile = (int) temp;
+  } else if (receiver_aile > 1500) {
+     receiver_aile_course;
+    if (receiver_aile_course >= 1) temp = (receiver_aile - 1500) * (1-(receiver_aile_course-1));
+    else temp = (receiver_aile - 1500) * (1-receiver_aile_course+1);
+    temp = temp + 1500;
+    receiver_aile = (int) temp;
+  }
+  if (receiver_elev < 1500) {
+    if (receiver_elev_course >= 1) temp = (receiver_elev - 1500) * -1 * (1-(receiver_elev_course-1));
+    else temp = (receiver_elev - 1500) * -1 * (1-receiver_elev_course+1);
+    temp = (temp - 500) * -1 + 1000;
+    receiver_elev = (int) temp;
+  } else if (receiver_elev > 1500) {
+     receiver_elev_course;
+    if (receiver_elev_course >= 1) temp = (receiver_elev - 1500) * (1-(receiver_elev_course-1));
+    else temp = (receiver_elev - 1500) * (1-receiver_elev_course+1);
+    temp = temp + 1500;
+    receiver_elev = (int) temp;
+  }
+  if (receiver_rudd < 1500) {
+    if (receiver_rudd_course >= 1) temp = (receiver_rudd - 1500) * -1 * (1-(receiver_rudd_course-1));
+    else temp = (receiver_rudd - 1500) * -1 * (1-receiver_rudd_course+1);
+    temp = (temp - 500) * -1 + 1000;
+    receiver_rudd = (int) temp;
+  } else if (receiver_rudd > 1500) {
+     receiver_rudd_course;
+    if (receiver_rudd_course >= 1) temp = (receiver_rudd - 1500) * (1-(receiver_rudd_course-1));
+    else temp = (receiver_rudd - 1500) * (1-receiver_rudd_course+1);
+    temp = temp + 1500;
+    receiver_rudd = (int) temp;
+  }
+  receiver_thro = receiver_thro+receiver_thro_trim;
+  receiver_aile = receiver_aile+receiver_aile_trim;
+  receiver_elev = receiver_elev+receiver_elev_trim;
+  receiver_rudd = receiver_rudd+receiver_rudd_trim;
   if (receiver_thro < 1000) receiver_thro = 1000;
   if (receiver_aile < 1000) receiver_aile = 1000;
   if (receiver_elev < 1000) receiver_elev = 1000;
@@ -152,10 +203,10 @@ void receiverTuning() {
   if (receiver_aile > 2000) receiver_aile = 2000;
   if (receiver_elev > 2000) receiver_elev = 2000;
   if (receiver_rudd > 2000) receiver_rudd = 2000;
-  if (abs(receiver_thro - receiver_thro_prev)) receiver_thro = (receiver_thro + receiver_thro_prev) / 2;
-  if (abs(receiver_aile - receiver_aile_prev)) receiver_aile = (receiver_aile + receiver_aile_prev) / 2;
-  if (abs(receiver_elev - receiver_elev_prev)) receiver_elev = (receiver_elev + receiver_elev_prev) / 2;
-  if (abs(receiver_rudd - receiver_rudd_prev)) receiver_rudd = (receiver_rudd + receiver_rudd_prev) / 2;
+  if (abs(receiver_thro - receiver_thro_prev) <= receiver_thro_deadband) receiver_thro = receiver_thro_prev;
+  if (abs(receiver_aile - receiver_aile_prev) <= receiver_aile_deadband) receiver_aile = receiver_aile_prev;
+  if (abs(receiver_elev - receiver_elev_prev) <= receiver_elev_deadband) receiver_elev = receiver_elev_prev;
+  if (abs(receiver_rudd - receiver_rudd_prev) <= receiver_rudd_deadband) receiver_rudd = receiver_rudd_prev;
   if (receiver_thro_inversion) receiver_thro = (receiver_thro - 2000) * -1 + 1000;
   if (receiver_aile_inversion) receiver_aile = (receiver_aile - 2000) * -1 + 1000;
   if (receiver_elev_inversion) receiver_elev = (receiver_elev - 2000) * -1 + 1000;
@@ -221,32 +272,60 @@ void joystickCenter() {
 void serialWait() {
   while (Serial.available() < 1);
 }
-void serialCommunication() {
-  if (Serial.available() >= 3) {
-    byte command[3];
-    for (int i = 0; i < 3; i++) command[i] = Serial.read();
-    if (command[0] == 103 && command[1] == 101 && command[2] == 116) { // Command get
-      serialWait();
-      byte type = Serial.read();
-      switch (type) {
-        case 0:
-          for (int i = 0; i <= 30; i++) Serial.write(EEPROM.read(i));
-          break;
-        case 1:
-          convertReceiverToSerial();
-          if (receiverTest()) Serial.write((byte) 1);
-          else Serial.write((byte) 0);
-          Serial.write(serial_thro1);
-          Serial.write(serial_thro2);
-          Serial.write(serial_aile1);
-          Serial.write(serial_aile2);
-          Serial.write(serial_elev1);
-          Serial.write(serial_elev2);
-          Serial.write(serial_rudd1);
-          Serial.write(serial_rudd2);
-          break;
-      }
+void serialWrite(byte value) {
+  while (Serial.availableForWrite() < 1);
+  Serial.write(value);
+}
+void serialRead() {
+  byte command[] = {0,0,0,0,0,0};
+  int i = 0;
+  while (Serial.available() > 0) {
+    command[i] = Serial.read();
+    i++;
+  }
+  if (command[0] == 114 && command[1] == 101 && command[2] == 97 && command[3] == 100 && command[4] == 121) serial_mode = 1; // Command ready
+  if (command[0] == 101 && command[1] == 110 && command[2] == 100) serial_mode = 0; // Command end
+  if (command[0] == 117 && command[1] == 112 && command[2] == 100 && command[3] == 97 && command[4] == 116 && command[5] == 101) serial_mode = 3; // Command update
+}
+void serialSend() {
+  if (serial_mode > 0) {
+    if (joystick) {
+      Joystick.end();
+      joystick = false;
     }
+    delay(1000);
+  } else {
+    if (!joystick) {
+      Joystick.begin();
+      joystick = true;
+    }
+  }
+  switch (serial_mode) {
+    case 1:
+      for (int i=0; i<33; i++) serialWrite(EEPROM.read(i));
+      serial_mode = 2;
+      break;
+    case 2:
+      convertReceiverToSerial();
+      if (receiverTest()) serialWrite((byte) 1);
+      else serialWrite((byte) 0);
+      serialWrite(serial_thro1);
+      serialWrite(serial_thro2);
+      serialWrite(serial_aile1);
+      serialWrite(serial_aile2);
+      serialWrite(serial_elev1);
+      serialWrite(serial_elev2);
+      serialWrite(serial_rudd1);
+      serialWrite(serial_rudd2);
+      break;
+    case 3:
+      for (int i=0; i<33; i++) {
+        serialWait();
+        EEPROM.put(i, Serial.read());
+      }
+      eepromRead();
+      serial_mode = 2;
+      break;
   }
 }
 
@@ -264,11 +343,12 @@ void setup() {
 void loop() {
   receiverUpdate();
   if (receiverTest()) {
-    //receiverTuning();
+    receiverTuning();
     convertReceiverToJoystick();
     joystickUpdate();
   } else {
     joystickCenter();
   }
-  serialCommunication();
+  serialRead();
+  serialSend();
 }
