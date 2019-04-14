@@ -1,2 +1,2 @@
-# spektrumrc-sim
-Use an Arduino board to transform your SpektrumRC receiver to a game controller
+# arduinorc-sim
+Use an Arduino board to transform your RC receiver to a game controller
